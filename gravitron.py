@@ -5,13 +5,14 @@ import time
 #units are metric (kg, meters, m/sec, newtons)
 
 class body:
-    def __init__(self, mass, position, velocity):
+    def __init__(self, mass, position, velocity, char):
         self.mass = mass
         self.position = position #position coords
         
         self.forces = list() #list of force vectors on object
         self.accel = (0,0) #instantanious acceleration vector
         self.velocity = velocity
+        self.char = char
         
     def getMass(self):
         return self.mass
@@ -55,6 +56,9 @@ class body:
         print("Acceleration: {}, {}deg".format(self.accel[0], math.degrees(self.accel[1])))
         print("Velocity: {}, {}deg".format(self.velocity[0], math.degrees(self.velocity[1])))
         
+    def symbol(self):
+        return self.char
+        
 def distance(a, b): #distance between two bodies
     p1 = a.getPos()
     p2 = b.getPos()
@@ -87,42 +91,38 @@ def addRectVectors(v1, v2):
     return (v1[0] + v2[0], v1[1] + v2[1])
 
 def main():
-    a = body(2e30, (0,0), (0,0)) #sun
-    b = body(6e24, (150e9,0), (30000, 1.5708)) #earth
-    #a = body(100, (150e9,6.4e6))
+    bodylist = []
     
-    grid = [['.' for x in range(50)] for y in range(50)]
-    
+    bodylist.append(body(2e30, (0,0), (0,0), '*')) #sun
+    bodylist.append(body(6e24, (150e9,0), (30000, 1.5708), 'e')) #earth
+    bodylist.append(body(4.87e24, (0, 109e9), (35000, 3.14195), 'v')) #venus
+    bodylist.append(body(3.29e23, (64e9, 0), (48000, 1.5708), 'm')) #mercury
+    #bodylist.append(body(10e27, (180e9, 0), (10000, 1.5708), 'r'))
     
     tick = 1000
-    
     t = 0
     while True:
-        a.appendForce(b)
-        b.appendForce(a)
-        a.updateData(tick)
-        b.updateData(tick)
+        for b1 in bodylist:
+            for b2 in bodylist:
+                if (b1 != b2):
+                    b1.appendForce(b2)
+        
+        for b in bodylist:
+            b.updateData(tick)
        
         if (t % 86400 == 0):
-            '''
-            print("a:")
-            a.printData()
-            print("b:")
-            b.printData()
-            print(t)
-            print()
-            '''
             system("cls")
+            grid = [[' ' for x in range(50)] for y in range(50)]
             for x in range(50):
                 for y in range(50):
-                    if ((int(a.getPos()[0] / 10e9) + 25 == x and int(a.getPos()[1] / 10e9) + 25 == y) or (int(b.getPos()[0] / 10e9) + 25 == x and int(b.getPos()[1] / 10e9) + 25 == y)):
-                        grid[y][x] = '@'
-                    else:
-                        grid[y][x] = '.'
+                    for b in bodylist:
+                        if ((int(b.getPos()[0] / 10e9) + 25 == x and int(b.getPos()[1] / 10e9) + 25 == y)):
+                            grid[y][x] = b.symbol()
                     print(grid[y][x], end = ' ')
                 print()
                 
             print("t={}\n".format(t))
+        
         
         t += tick
     
