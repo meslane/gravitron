@@ -2,6 +2,8 @@ import math
 from os import system
 import time
 import pygame
+import json
+import sys
 
 #units are metric (kg, meters, m/sec, newtons)
 
@@ -92,46 +94,60 @@ def addPolarVectors(v1, v2):
 def addRectVectors(v1, v2):
     return (v1[0] + v2[0], v1[1] + v2[1])
 
-def main():
-    RES_X = 1280
-    RES_Y = 720
-    SCALE1 = 10e8
-    SCALE2 = 2
-    screen = pygame.display.set_mode([RES_X,RES_Y])
+def main(argv):
+    screen = pygame.display.set_mode([1280,720], pygame.RESIZABLE)
+    pygame.font.init()
+    pfont = pygame.font.SysFont("Consolas", 14)
+    bfont = pygame.font.SysFont("Arial", 32)
 
     bodylist = []
     
-    bodylist.append(body(2e30, (0,0), (0,0), (255,150,0), 25)) #sun
-    bodylist.append(body(6.39e23, (0, 237.71e9), (24060, 3.14159), (255,69,0), 8)) #mars
-    bodylist.append(body(6e24, (150e9,0), (30000, 1.5708), (0,0,255), 10)) #earth
-    bodylist.append(body(4.87e24, (0, 109e9), (35000, 3.14195), (255,255,0), 10)) #venus
-    bodylist.append(body(3.29e23, (64e9, 0), (48000, 1.5708), (128,128,128), 7)) #mercury
-    #bodylist.append(body(10e27, (180e9, 0), (10000, 1.5708), (255,0,255), 15))
+    with open(str(argv), 'r') as b:
+        j = json.load(b)
+        
+    for b in j["bodies"]:
+        bodylist.append(body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
     
-    tick = 1000
+    tick = j["tick"]
+    framePeriod = j["fperiod"]
+    
     t = 0
     loop = True
+    paused = False
     while loop:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 loop = False
-        
-        for b1 in bodylist:
-            for b2 in bodylist:
-                if (b1 != b2):
-                    b1.appendForce(b2)
-        
-        for b in bodylist:
-            b.updateData(tick)
-       
-        if (t % 86400 == 0):
-            screen.fill((0,0,0))
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if paused == False:
+                        pausebox = bfont.render("PAUSED", False, (255,255,255))
+                        screen.blit(pausebox, pausebox.get_rect(center = (int(screen.get_width()/2),20)))
+                        pygame.display.flip()
+                        paused = True
+                    else:
+                        paused = False
+                
+        if paused == False: #compute body interactions
+            for b1 in bodylist:
+                for b2 in bodylist:
+                    if (b1 != b2):
+                        b1.appendForce(b2)
+            
             for b in bodylist:
-                pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / SCALE1) + int(RES_X/2), int(b.getPos()[1] / SCALE1) + int(RES_Y/2)), int(b.size/SCALE2))
-        
-            pygame.display.flip()
-        
-        t += tick
+                b.updateData(tick)
+           
+            if (t % framePeriod == 0):
+                screen.fill((0,0,0))
+                timebox = pfont.render("t = {}s".format(t), False, (255,255,255))
+                screen.blit(timebox, (10, 10))
+                
+                for b in bodylist:
+                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / j["sscale"]) + int(screen.get_width()/2), int(b.getPos()[1] / j["sscale"]) + int(screen.get_height()/2)), int(b.size * j["bscale"]))
+            
+                pygame.display.flip()
+            
+            t += tick
     
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1])

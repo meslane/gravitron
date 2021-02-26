@@ -1,0 +1,47 @@
+{
+    "tick": 2000,
+    "fperiod": 86400,
+    "sscale": 10e8,
+    "bscale": 0.5,
+    "bodies": [
+        {
+            "mass": 2e30,
+            "position": [0,0],
+            "velocity": [0,0],
+            "color": [255,150,0],
+            "size": 25
+        },
+        
+        {
+            "mass": 6.39e23,
+            "position": [0, 237.71e9],
+            "velocity": [24060, 0],
+            "color": [255,69,0],
+            "size": 8
+        },
+        
+        {
+            "mass": 6e24,
+            "position": [150e9,0],
+            "velocity": [30000, -1.5708],
+            "color": [0,0,255],
+            "size": 10
+        },
+        
+        {
+            "mass": 4.87e24,
+            "position": [0, 109e9],
+            "velocity": [35000, 0],
+            "color": [255,255,0],
+            "size": 10
+        },
+        
+        {
+            "mass": 3.29e23,
+            "position": [64e9, 0],
+            "velocity": [48000, -1.5708],
+            "color": [128,128,128],
+            "size": 7
+        }
+    ]
+}
