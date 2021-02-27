@@ -95,10 +95,14 @@ def addRectVectors(v1, v2):
     return (v1[0] + v2[0], v1[1] + v2[1])
 
 def main(argv):
+    pygame.init()
+
+    pygame.display.set_caption("Gravitron")
     screen = pygame.display.set_mode([1280,720], pygame.RESIZABLE)
-    pygame.font.init()
     pfont = pygame.font.SysFont("Consolas", 14)
     bfont = pygame.font.SysFont("Arial", 32)
+    
+    pausebox = bfont.render("PAUSED", True, (255,255,255))
 
     bodylist = []
     
@@ -115,18 +119,33 @@ def main(argv):
     loop = True
     paused = False
     while loop:
-        for event in pygame.event.get():
+        for event in pygame.event.get(): #pygame event detection
             if event.type == pygame.QUIT:
                 loop = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if paused == False:
-                        pausebox = bfont.render("PAUSED", False, (255,255,255))
-                        screen.blit(pausebox, pausebox.get_rect(center = (int(screen.get_width()/2),20)))
-                        pygame.display.flip()
                         paused = True
                     else:
                         paused = False
+                if event.key == pygame.K_r: #reset simulation
+                    bodylist.clear()
+                    for b in j["bodies"]:
+                        bodylist.append(body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
+                    t = 0
+                        
+        if (t % framePeriod == 0 or paused == True): #render objects
+            screen.fill((0,0,0))
+            timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
+            screen.blit(timebox, (10, 10))
+                
+            for b in bodylist:
+                pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / j["sscale"]) + int(screen.get_width()/2), int(b.getPos()[1] / j["sscale"]) + int(screen.get_height()/2)), int(b.size * j["bscale"]))
+            
+            if paused == True:
+                screen.blit(pausebox, pausebox.get_rect(center = (int(screen.get_width()/2),20)))
+            
+            pygame.display.flip()
                 
         if paused == False: #compute body interactions
             for b1 in bodylist:
@@ -137,16 +156,6 @@ def main(argv):
             for b in bodylist:
                 b.updateData(tick)
            
-            if (t % framePeriod == 0):
-                screen.fill((0,0,0))
-                timebox = pfont.render("t = {}s".format(t), False, (255,255,255))
-                screen.blit(timebox, (10, 10))
-                
-                for b in bodylist:
-                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / j["sscale"]) + int(screen.get_width()/2), int(b.getPos()[1] / j["sscale"]) + int(screen.get_height()/2)), int(b.size * j["bscale"]))
-            
-                pygame.display.flip()
-            
             t += tick
     
 if __name__ == "__main__":
