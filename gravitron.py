@@ -1,116 +1,14 @@
 import math
-from os import system
 import time
 import pygame
 import json
 import sys
 
-#units are metric (kg, meters, m/sec, newtons)
-
-class entrybox:
-    def __init__(self, pos, size, color, bfont, text, cfont, ctext):
-        self.pos = pos
-        self.size = size
-        self.color = color
-        
-        self.caption = cfont.render(ctext, True, (255,255,255))
-        self.text = bfont.render(text, True, (255, 255, 255))
-        self.captionrect = self.caption.get_rect(center = (int(self.pos[0]) ,self.pos[1] - self.size[1]))
-        
-    def disp(self, screen):
-        r = pygame.Rect(self.pos, self.size)
-        r.center = self.pos
-        pygame.draw.rect(screen, self.color, r, 0)
-        screen.blit(self.caption, self.captionrect)
-
-class body:
-    def __init__(self, mass, position, velocity, color, size):
-        self.mass = mass
-        self.position = position #position coords
-        
-        self.forces = list() #list of force vectors on object
-        self.accel = (0,0) #instantanious acceleration vector
-        self.velocity = velocity
-        self.color = color
-        self.size = size #pixel radius
-        
-    def getMass(self):
-        return self.mass
-        
-    def getPos(self):
-        return self.position
-      
-    def appendForce(self, obj):
-        self.forces.append((fg(self, obj), angle(self, obj)))
-        
-    def getNetForce(self):
-        forceSum = (0,0)
-        
-        for force in self.forces:
-            forceSum = addPolarVectors(forceSum, force)
-            
-        return forceSum
-        
-    def calculateAccel(self):
-        f = self.getNetForce()
-        self.accel = (f[0]/self.mass, f[1])
-        return self.accel
-        
-    def calculateDisp(self, tick): #kinematic equation #3 
-        v = (self.velocity[0] * tick, self.velocity[1])
-       
-        return addPolarVectors(v, ((0.5 * self.accel[0] * (tick ** 2)), self.accel[1]))
-        
-    def calculateVelocity(self, tick): #calculate body velocity based on tick interval (kinematic equation #1)
-        self.velocity = addPolarVectors(self.velocity, (self.accel[0] * tick, self.accel[1]))
-        return self.velocity
-       
-    def updateData(self, tick):
-        self.calculateAccel()
-        self.position = addRectVectors(self.position, polToRect(self.calculateDisp(tick)))
-        self.calculateVelocity(tick)
-        self.forces.clear() #clear list for next round of calcs
-    
-    def printData(self):
-        print("Position: {}, {}".format(self.position[0], self.position[1]))
-        print("Acceleration: {}, {}deg".format(self.accel[0], math.degrees(self.accel[1])))
-        print("Velocity: {}, {}deg".format(self.velocity[0], math.degrees(self.velocity[1])))
-        
-    def symbol(self):
-        return self.char
-        
-def distance(a, b): #distance between two bodies
-    p1 = a.getPos()
-    p2 = b.getPos()
-    
-    return math.sqrt(((p2[0] - p1[0]) ** 2) + ((p2[1] - p1[1]) ** 2))
-    
-def angle(a, b): #returns angle with respect to origin and first body (in radians)
-    p1 = a.getPos()
-    p2 = b.getPos()
-    
-    return math.atan2((p2[1] - p1[1]), (p2[0] - p1[0]))
-    
-def fg(a, b): #grav formula (returns force vector)
-    g = 6.674e-11 #grav constant
-    return g*(a.getMass() * b.getMass())/(distance(a,b) ** 2)
-    
-def polToRect(v):
-    return (v[0]*math.cos(v[1]), v[0]*math.sin(v[1]))
-
-def rectToPol(v):
-    return (math.sqrt(v[0] ** 2 + v[1] ** 2), math.atan2(v[1], v[0]))
-    
-def addPolarVectors(v1, v2):
-    v1 = polToRect(v1)
-    v2 = polToRect(v2)
-    
-    return(rectToPol((v1[0] + v2[0], v1[1] + v2[1])))
-    
-def addRectVectors(v1, v2):
-    return (v1[0] + v2[0], v1[1] + v2[1])
+import phys
+import gui
 
 def main(argv):
+    ###SETUP
     pygame.init()
 
     pygame.display.set_caption("Gravitron")
@@ -121,26 +19,43 @@ def main(argv):
     pausebox = bfont.render("PAUSED", True, (255,255,255))
     menubox = bfont.render("Add Object", True, (255,255,255))
     
-    masstxt = bfont.render("Mass", True, (255,255,255))
-    xpostxt = bfont.render("X Position", True, (255,255,255))
-    ypostxt = bfont.render("Y Position", True, (255,255,255))
-    vmagtxt = bfont.render("V Magnitude", True, (255,255,255))
-    vangtxt = bfont.render("V Angle", True, (255,255,255))
-    colortxt = bfont.render("Color (R,G,B)", True, (255,255,255))
-    sizetxt = bfont.render("Radius", True, (255,255,255))
-
+    rcolor1 = (128,128,128)
+    rcolor2 = (128,128,255)
+    
+    bdims = (180, 50)
+    bspace = 110
+    
+    mrects = []
+    
+    mrects.append(gui.entrybox((int(screen.get_width()/2) - bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Mass", 9)) #text boxes for menu
+    mrects.append(gui.entrybox((int(screen.get_width()/2) + bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Radius", 9))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) - bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "X", 9))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) + bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "Y", 9))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) - bspace, 360), bdims, rcolor1, rcolor2, bfont, "", bfont, "V Mag.", 9))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) + bspace, 360), bdims, rcolor1, rcolor2, bfont, "", bfont, "V Angle", 9))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) - 150, 480), (100, 50), rcolor1, rcolor2, bfont, "", bfont, "R", 3))
+    mrects.append(gui.entrybox((int(screen.get_width()/2), 480), (100, 50), rcolor1, rcolor2, bfont, "", bfont, "G", 3))
+    mrects.append(gui.entrybox((int(screen.get_width()/2) + 150, 480), (100, 50), rcolor1, rcolor2, bfont, "", bfont, "B", 3))
+    
+    abutton = gui.clickButton((int(screen.get_width()/2), 600), (200, 50), (128, 200, 128), (128, 128, 200), bfont, "Add")
+    
+    tickslider = gui.slider((int(screen.get_width()/2) + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
+    frameslider = gui.slider((int(screen.get_width()/2) + 450, 360), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
+    
     bodylist = []
     
     with open(str(argv), 'r') as b:
         j = json.load(b)
         
     for b in j["bodies"]:
-        bodylist.append(body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
+        bodylist.append(phys.body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
     
     tick = j["tick"]
     framePeriod = j["fperiod"]
     
+    ###BEGIN MAIN LOOP
     t = 0
+    changet = 0
     loop = True
     paused = False
     inMenu = False
@@ -149,15 +64,17 @@ def main(argv):
             if event.type == pygame.QUIT:
                 loop = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_SPACE and not inMenu: #pause simulation
                     if paused == False:
                         paused = True
+                        print("paused")
                     else:
                         paused = False
-                if event.key == pygame.K_r: #reset simulation
+                        print("unpaused")
+                if event.key == pygame.K_r and not inMenu: #reset simulation
                     bodylist.clear()
                     for b in j["bodies"]:
-                        bodylist.append(body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
+                        bodylist.append(phys.body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"]))
                     t = 0
                 if event.key == pygame.K_ESCAPE: #add/remove body menu
                     if not inMenu:
@@ -165,30 +82,49 @@ def main(argv):
                         paused = True
                     else:
                         inMenu = False
-                        
+            if inMenu:
+                for r in mrects:
+                    r.getClick(event)
+                    
+                changet = t
+                tick = tickslider.getSlide(event)
+                framePeriod = frameslider.getSlide(event)
+                
+                if abutton.getClick(event): #if add button is clicked, attempt to add body
+                    bodylist.append(phys.body(mrects[0].value(), (mrects[2].value(), mrects[3].value()), (mrects[4].value(), math.radians(mrects[5].value())), (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), mrects[1].value()))
+                    for m in mrects:
+                        print(m.value())
 
         if inMenu == True: #do menu
             screen.fill((0,0,0))
             screen.blit(menubox, menubox.get_rect(center = (int(screen.get_width()/2),20)))
             
-            rects = []
+            mrects[0].updatePos((int(screen.get_width()/2) - bspace, 120))
+            mrects[1].updatePos((int(screen.get_width()/2) + bspace, 120))
+            mrects[2].updatePos((int(screen.get_width()/2) - bspace, 240))
+            mrects[3].updatePos((int(screen.get_width()/2) + bspace, 240))
+            mrects[4].updatePos((int(screen.get_width()/2) - bspace, 360))
+            mrects[5].updatePos((int(screen.get_width()/2) + bspace, 360))
+            mrects[6].updatePos((int(screen.get_width()/2) - 150, 480))
+            mrects[7].updatePos((int(screen.get_width()/2), 480))
+            mrects[8].updatePos((int(screen.get_width()/2) + 150, 480))
             
-            rects.append(entrybox((int(screen.get_width()/2) - 75, 120), (100, 50), (128,128,128), bfont, " ", bfont, "Mass"))
-            rects.append(entrybox((int(screen.get_width()/2) + 75, 120), (100, 50), (128,128,128), bfont, " ", bfont, "Radius"))
-            rects.append(entrybox((int(screen.get_width()/2) - 75, 240), (100, 50), (128,128,128), bfont, " ", bfont, "X"))
-            rects.append(entrybox((int(screen.get_width()/2) + 75, 240), (100, 50), (128,128,128), bfont, " ", bfont, "Y"))
-            rects.append(entrybox((int(screen.get_width()/2) - 75, 360), (100, 50), (128,128,128), bfont, " ", bfont, "V Mag."))
-            rects.append(entrybox((int(screen.get_width()/2) + 75, 360), (100, 50), (128,128,128), bfont, " ", bfont, "V Angle"))
-            rects.append(entrybox((int(screen.get_width()/2) - 150, 480), (100, 50), (128,128,128), bfont, " ", bfont, "R"))
-            rects.append(entrybox((int(screen.get_width()/2), 480), (100, 50), (128,128,128), bfont, " ", bfont, "G"))
-            rects.append(entrybox((int(screen.get_width()/2) + 150, 480), (100, 50), (128,128,128), bfont, " ", bfont, "B"))
-            
-            for r in rects:
+            abutton.updatePos((int(screen.get_width()/2), 600))
+
+            tickslider.updatePos((int(screen.get_width()/2) + 450, 120))
+            frameslider.updatePos((int(screen.get_width()/2) + 450, 300))
+
+            for r in mrects:
                 r.disp(screen)
+            
+            abutton.disp(screen)
+
+            tickslider.disp(screen)
+            frameslider.disp(screen)
                 
             pygame.display.flip()
         
-        elif (t % framePeriod == 0 or paused == True): #render objects
+        elif ((t - changet) % framePeriod == 0 or paused == True): #render objects
             screen.fill((0,0,0))
             timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
             screen.blit(timebox, (10, 10))
@@ -201,7 +137,7 @@ def main(argv):
             
             pygame.display.flip()
                 
-        if paused == False: #compute body interactions
+        if not paused: #compute body interactions
             for b1 in bodylist:
                 for b2 in bodylist:
                     if (b1 != b2):
