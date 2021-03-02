@@ -4,6 +4,8 @@ import pygame
 import json
 import sys
 
+import threading
+
 import phys
 import gui
 
@@ -39,8 +41,9 @@ def main(argv):
     
     abutton = gui.clickButton((int(screen.get_width()/2), 600), (200, 50), (128, 200, 128), (128, 128, 200), bfont, "Add")
     
-    tickslider = gui.slider((int(screen.get_width()/2) + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
-    frameslider = gui.slider((int(screen.get_width()/2) + 450, 360), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
+    tickslider = gui.slider((int(screen.get_width()/2) + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "10m", "1h"], [1, 10, 60, 600, 3600])
+    frameslider = gui.slider((int(screen.get_width()/2) + 450, 300), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
+    sscaleslider = gui.slider((int(screen.get_width()/2) + 450, 480), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Pixel Scale (m/px)", ["1", "100", "1e6", "1e9", "1e12"], [1, 100, 1e6, 1e9, 1e12])
     
     bodylist = []
     
@@ -52,10 +55,23 @@ def main(argv):
     
     tick = j["tick"]
     framePeriod = j["fperiod"]
+    sscale = j["sscale"]
     
     ###BEGIN MAIN LOOP
     t = 0
     changet = 0
+    
+    tpersec = 0
+    lastsimsecs = 0
+    lasttime = time.time()
+    secsrate = 0
+    
+    xoffset = 0
+    yoffset = 0
+    
+    framesDelivered = 0
+    fps = 0
+    
     loop = True
     paused = False
     inMenu = False
@@ -67,10 +83,8 @@ def main(argv):
                 if event.key == pygame.K_SPACE and not inMenu: #pause simulation
                     if paused == False:
                         paused = True
-                        print("paused")
                     else:
                         paused = False
-                        print("unpaused")
                 if event.key == pygame.K_r and not inMenu: #reset simulation
                     bodylist.clear()
                     for b in j["bodies"]:
@@ -82,6 +96,16 @@ def main(argv):
                         paused = True
                     else:
                         inMenu = False
+                        
+                if event.key == pygame.K_UP:
+                    yoffset += 100
+                elif event.key == pygame.K_DOWN:
+                    yoffset -= 100
+                elif event.key == pygame.K_RIGHT:
+                    xoffset -= 100
+                elif event.key == pygame.K_LEFT:
+                    xoffset += 100
+                
             if inMenu:
                 for r in mrects:
                     r.getClick(event)
@@ -89,9 +113,12 @@ def main(argv):
                 changet = t
                 tick = tickslider.getSlide(event)
                 framePeriod = frameslider.getSlide(event)
+                sscale = sscaleslider.getSlide(event)
                 
                 if abutton.getClick(event): #if add button is clicked, attempt to add body
-                    bodylist.append(phys.body(mrects[0].value(), (mrects[2].value(), mrects[3].value()), (mrects[4].value(), math.radians(mrects[5].value())), (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), mrects[1].value()))
+                    if (mrects[0].value() != 0):
+                        bodylist.append(phys.body(mrects[0].value(), (mrects[2].value(), mrects[3].value()), (mrects[4].value(), math.radians(mrects[5].value())), (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), mrects[1].value()))
+                    
                     for m in mrects:
                         print(m.value())
 
@@ -113,6 +140,7 @@ def main(argv):
 
             tickslider.updatePos((int(screen.get_width()/2) + 450, 120))
             frameslider.updatePos((int(screen.get_width()/2) + 450, 300))
+            sscaleslider.updatePos((int(screen.get_width()/2) + 450, 480))
 
             for r in mrects:
                 r.disp(screen)
@@ -121,21 +149,32 @@ def main(argv):
 
             tickslider.disp(screen)
             frameslider.disp(screen)
+            sscaleslider.disp(screen)
                 
             pygame.display.flip()
         
         elif ((t - changet) % framePeriod == 0 or paused == True): #render objects
             screen.fill((0,0,0))
             timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
+            sbox = pfont.render("Sim Secs/Real Secs = {}".format(secsrate), True, (255,255,255))
+            fbox = pfont.render("Frames Per Second = {}".format(fps), True, (255,255,255))
+            pbox = pfont.render("Center = ({}m,{}m)".format(int(-1 * xoffset * sscale), int(yoffset * sscale)), True, (255,255,255))
             screen.blit(timebox, (10, 10))
+            screen.blit(sbox, (10, 30))
+            screen.blit(fbox, (10, 50))
+            screen.blit(pbox, (10, 70))
                 
             for b in bodylist:
-                pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / j["sscale"]) + int(screen.get_width()/2), int(b.getPos()[1] / j["sscale"]) + int(screen.get_height()/2)), int(b.size * j["bscale"]))
+                try:
+                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / sscale) + int(screen.get_width()/2) + xoffset, int(b.getPos()[1] / sscale) + int(screen.get_height()/2) + yoffset), int(b.size * j["bscale"]))
+                except TypeError:
+                    pass
             
             if paused == True:
                 screen.blit(pausebox, pausebox.get_rect(center = (int(screen.get_width()/2),20)))
             
             pygame.display.flip()
+            framesDelivered += 1
                 
         if not paused: #compute body interactions
             for b1 in bodylist:
@@ -143,9 +182,24 @@ def main(argv):
                     if (b1 != b2):
                         b1.appendForce(b2)
             
+            #multithreading was SLOWER than single threaded - I've been scammed
+            #threadlist = []
             for b in bodylist:
+                #threadlist.append(threading.Thread(target = b.updateData, args = (tick,)))
+                #threadlist[-1].start()
                 b.updateData(tick)
-           
+                
+            #for th in threadlist:
+                #th.join()
+            
+            if (time.time() - lasttime >= 1): #update time counter
+                secsrate = t - lastsimsecs
+                lastsimsecs = t
+                lasttime = time.time()
+                
+                fps = framesDelivered
+                framesDelivered = 0
+                
             t += tick
     
 if __name__ == "__main__":
