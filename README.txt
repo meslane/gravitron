@@ -11,3 +11,9 @@ greater than ~100 years.
 
 Delivering frames to the screen is generally more computationally expensive than calculating body interactions, provided that the number
 of simulated bodies is somewhat low. Therefore, increasing the time/frame is a good way to speed up your sim.
+
+Gravitron can only simulate gravitational interactions, it CANNOT (yet) simulate:
+
+-Collisions
+-Relativistic effects
+-Gravitational propagation 
