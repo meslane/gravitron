@@ -8,7 +8,26 @@ import copy
 import phys
 import gui
 
-def main(argv):
+def saveToJson(bodies, filename):
+    jdict = {
+        "bodies": []
+    }
+    
+    for b in bodies:
+        btemp = {
+            "mass": b.mass,
+            "position": list(b.position),
+            "velocity": list(b.velocity),
+            "color": list(b.color),
+            "size": b.size
+        }
+        
+        jdict["bodies"].append(btemp)
+    
+    with open("{}.json".format(filename), "w") as f:
+        json.dump(jdict, f, indent = 4)
+
+def main():
     ###SETUP
     pygame.init()
 
@@ -33,12 +52,13 @@ def main(argv):
     numchars = ['-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'E', 'e']
     fchars = []
     
+    fchars += numchars[2:-2]
     for c in range(65, 91): #fill out ascii
         fchars.append(chr(c))
         fchars.append(chr(c + 32))
     
     mrects.append(gui.entrybox((mxcenter - bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Mass", 9, numchars)) #text boxes for menu
-    mrects.append(gui.entrybox((mxcenter + bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Radius", 9, numchars))
+    mrects.append(gui.entrybox((mxcenter + bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Size (px)", 9, numchars))
     mrects.append(gui.entrybox((mxcenter - bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "X", 9, numchars))
     mrects.append(gui.entrybox((mxcenter + bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "Y", 9, numchars))
     mrects.append(gui.entrybox((mxcenter - bspace, 360), bdims, rcolor1, rcolor2, bfont, "", bfont, "V Mag.", 9, numchars))
@@ -60,6 +80,7 @@ def main(argv):
     bodylist = []
     backuplist = []
     
+    '''
     with open(str(argv), 'r') as b:
         j = json.load(b)
         
@@ -67,10 +88,11 @@ def main(argv):
         bdy = phys.body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"])
         bodylist.append(bdy)
         backuplist.append(copy.deepcopy(bdy))
+    '''
     
-    tick = j["tick"]
-    framePeriod = j["fperiod"]
-    sscale = j["sscale"]
+    tick = 1
+    framePeriod = 1
+    sscale = 1e9
     
     bboxlist = []
     for b in bodylist:
@@ -147,17 +169,36 @@ def main(argv):
                 
                 if abutton.getClick(event): #if add button is clicked, attempt to add body
                     if (mrects[0].value() != 0):
-                        bdy = phys.body(mrects[0].value(), (mrects[2].value(), mrects[3].value()), (mrects[4].value(), math.radians(mrects[5].value())), (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), mrects[1].value())
+                        bdy = phys.body(float(mrects[0].value()), (float(mrects[2].value()), float(mrects[3].value())), (float(mrects[4].value()), math.radians(float(mrects[5].value()))), (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), int(mrects[1].value()))
                         
                         bodylist.append(bdy)
                         backuplist.append(copy.deepcopy(bdy))
-                        bboxlist.append(gui.bodyBox((mxcenter - 450, yp), (50, 50), (200, 128, 128), (128, 128, 200), (128, 128, 128), bfont, "-", (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), mrects[1].value()))
+                        bboxlist.append(gui.bodyBox((0, 0), (50, 50), (200, 128, 128), (128, 128, 200), (128, 128, 128), bfont, "-", (int(mrects[6].value()), int(mrects[7].value()), int(mrects[8].value())), int(mrects[1].value())))
                         
                     for m in mrects:
                         print(m.value())
                         
                 filebox.getClick(event)
-
+                
+                #load and save files
+                if loadbutton.getClick(event):
+                    try:
+                        with open("{}.json".format(str(filebox.value())), 'r') as f:
+                            newsys = json.load(f)
+                            
+                            bodylist.clear()
+                            bboxlist.clear()
+                            backuplist.clear()
+                            for b in newsys["bodies"]:
+                                bdy = phys.body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"])
+                                bodylist.append(bdy)
+                                backuplist.append(copy.deepcopy(bdy))
+                                bboxlist.append(gui.bodyBox((0, 0), (50, 50), (200, 128, 128), (128, 128, 200), (128, 128, 128), bfont, "-", tuple(bdy.color), bdy.size))
+                    except FileNotFoundError:    
+                        print("File not found")
+                elif savebutton.getClick(event):
+                    saveToJson(bodylist, str(filebox.value()))
+                
         if inMenu == True: #do menu
             screen.fill((0,0,0))
             
@@ -178,6 +219,10 @@ def main(argv):
             tickslider.updatePos((mxcenter + 450, 120))
             frameslider.updatePos((mxcenter + 450, 300))
             sscaleslider.updatePos((mxcenter + 450, 480))
+            
+            filebox.updatePos((mxcenter - 430, 480))
+            loadbutton.updatePos((mxcenter - 500, 600))
+            savebutton.updatePos((mxcenter - 360, 600))
 
             for r in mrects:
                 r.disp(screen)
@@ -219,7 +264,7 @@ def main(argv):
                 
             for b in bodylist:
                 try:
-                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / sscale) + mxcenter + xoffset, int(b.getPos()[1] / sscale) + int(screen.get_height()/2) + yoffset), int(b.size * j["bscale"]))
+                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / sscale) + mxcenter + xoffset, int(b.getPos()[1] / sscale) + int(screen.get_height()/2) + yoffset), int(b.size * 0.5))
                 except TypeError:
                     pass
             
@@ -249,4 +294,4 @@ def main(argv):
             t += tick
     
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()
