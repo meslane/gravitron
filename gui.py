@@ -99,7 +99,7 @@ class slider:
         return self.valueList[self.vindex]
 
 class entrybox(box): #box that you can enter text into
-    def __init__(self, pos, size, rcolor, ccolor, tfont, text, cfont, ctext, txtlen):
+    def __init__(self, pos, size, rcolor, ccolor, tfont, text, cfont, ctext, txtlen, acceptableChars):
         super().__init__(pos, size, rcolor, ccolor, tfont, text)
       
         self.cfont = cfont
@@ -108,7 +108,7 @@ class entrybox(box): #box that you can enter text into
         self.txtlen = txtlen
         
         self.val = 0
-        self.acceptableChars = ['-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'E', 'e']
+        self.acceptableChars = acceptableChars
     
     def disp(self, screen):
         self.caption = self.cfont.render(self.ctext, True, (255,255,255))
@@ -122,7 +122,7 @@ class entrybox(box): #box that you can enter text into
         
     def value(self):
         try: 
-            return float(self.val)
+            return self.val
         except ValueError:
             return 0
 
