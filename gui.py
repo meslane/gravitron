@@ -180,10 +180,10 @@ class bodyBox(clickButton):
         self.bsize = int(bsize / 600000)
         self.bcolor = bcolor
         
-        if self.bsize > 50:
-            self.bsize = 50
-        elif self.bsize < 5:
-            self.bsize = 5
+        if self.bsize > 27:
+            self.bsize = 27
+        elif self.bsize < 3:
+            self.bsize = 3
         
         self.outerrect = pygame.Rect(self.pos, (int(self.size[0] * 2) + 20, self.size[1] + 10))
         

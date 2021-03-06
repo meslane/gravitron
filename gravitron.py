@@ -145,9 +145,9 @@ def main():
                         
                 #pan controls
                 if event.key == pygame.K_UP:
-                    yoffset += 100 * sscale
-                elif event.key == pygame.K_DOWN:
                     yoffset -= 100 * sscale
+                elif event.key == pygame.K_DOWN:
+                    yoffset += 100 * sscale
                 elif event.key == pygame.K_RIGHT:
                     xoffset -= 100 * sscale
                 elif event.key == pygame.K_LEFT:
@@ -271,16 +271,6 @@ def main():
         
         elif ((t - changet) % framePeriod == 0 or paused == True): #render objects
             screen.fill((0,0,0))
-            timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
-            sbox = pfont.render("Sim Secs/Real Secs = {}".format(secsrate), True, (255,255,255))
-            fbox = pfont.render("Frames Per Second = {}".format(fps), True, (255,255,255))
-            pbox = pfont.render("Center = ({}m,{}m)".format(int(-1 * xoffset), int(yoffset)), True, (255,255,255))
-            scbox = pfont.render("Scale: 1px = {}m".format(sscale), True, (255,255,255))
-            screen.blit(timebox, (10, 10))
-            screen.blit(sbox, (10, 30))
-            screen.blit(fbox, (10, 50))
-            screen.blit(pbox, (10, 70))
-            screen.blit(scbox, (10, 90))
                 
             for b in bodylist:
                 psize = int(b.size / sscale)
@@ -288,9 +278,21 @@ def main():
                     psize = 2
                 
                 try:
-                    pygame.draw.circle(screen, b.color, (int((b.getPos()[0] + xoffset) / sscale) + mxcenter, int((b.getPos()[1] + yoffset) / sscale) + int(screen.get_height()/2)), psize)
+                    pygame.draw.circle(screen, b.color, (int((b.getPos()[0] + xoffset) / sscale) + mxcenter, -1 * int((b.getPos()[1] + yoffset) / sscale) + int(screen.get_height()/2)), psize)
                 except TypeError:
                     pass
+                    
+            #info text
+            timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
+            sbox = pfont.render("Sim Secs/Real Secs = {}".format(secsrate), True, (255,255,255))
+            fbox = pfont.render("Frames Per Second = {}".format(fps), True, (255,255,255))
+            pbox = pfont.render("Center = ({}m,{}m)".format(int(-1 * xoffset), int(-1 * yoffset)), True, (255,255,255))
+            scbox = pfont.render("Scale: 1px = {}m".format(sscale), True, (255,255,255))
+            screen.blit(timebox, (10, 10))
+            screen.blit(sbox, (10, 30))
+            screen.blit(fbox, (10, 50))
+            screen.blit(pbox, (10, 70))
+            screen.blit(scbox, (10, 90))
             
             if paused == True:
                 screen.blit(pausebox, pausebox.get_rect(center = (mxcenter,20)))
