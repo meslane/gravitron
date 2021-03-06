@@ -58,7 +58,7 @@ def main():
         fchars.append(chr(c + 32))
     
     mrects.append(gui.entrybox((mxcenter - bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Mass", 9, numchars)) #text boxes for menu
-    mrects.append(gui.entrybox((mxcenter + bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Size (px)", 9, numchars))
+    mrects.append(gui.entrybox((mxcenter + bspace, 120), bdims, rcolor1, rcolor2, bfont, "", bfont, "Radius", 9, numchars))
     mrects.append(gui.entrybox((mxcenter - bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "X", 9, numchars))
     mrects.append(gui.entrybox((mxcenter + bspace, 240), bdims, rcolor1, rcolor2, bfont, "", bfont, "Y", 9, numchars))
     mrects.append(gui.entrybox((mxcenter - bspace, 360), bdims, rcolor1, rcolor2, bfont, "", bfont, "V Mag.", 9, numchars))
@@ -71,7 +71,7 @@ def main():
     
     tickslider = gui.slider((mxcenter + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "10m", "1h"], [1, 10, 60, 600, 3600])
     frameslider = gui.slider((mxcenter + 450, 300), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
-    sscaleslider = gui.slider((mxcenter + 450, 480), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Pixel Scale (m/px)", ["1", "1000", "1e6", "1e9", "1e12"], [1, 1000, 1e6, 1e9, 1e12])
+    #sscaleslider = gui.slider((mxcenter + 450, 480), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Pixel Scale (m/px)", ["1", "1000", "1e6", "1e9", "1e12"], [1, 1000, 1e6, 1e9, 1e12])
 
     filebox = gui.entrybox((mxcenter - 430, 480), (300, 50), rcolor1, rcolor2, bfont, "", bfont, "Filename", 15, fchars)
     loadbutton = gui.clickButton((mxcenter - 500, 600), (100, 50), (128, 200, 128), (128, 128, 200), bfont, "Load")
@@ -143,14 +143,32 @@ def main():
                     else:
                         inMenu = False
                         
+                #pan controls
                 if event.key == pygame.K_UP:
-                    yoffset += 100
+                    yoffset += 100 * sscale
                 elif event.key == pygame.K_DOWN:
-                    yoffset -= 100
+                    yoffset -= 100 * sscale
                 elif event.key == pygame.K_RIGHT:
-                    xoffset -= 100
+                    xoffset -= 100 * sscale
                 elif event.key == pygame.K_LEFT:
-                    xoffset += 100
+                    xoffset += 100 * sscale
+                elif event.key == pygame.K_c:
+                    xoffset = 0
+                    yoffset = 0
+                    
+                #zoom controls
+                fd = int(str(sscale)[0]) 
+                if event.key == pygame.K_MINUS:
+                    if fd == 1:
+                        sscale *= 2.5
+                    else:
+                        sscale *= 2
+                elif event.key == pygame.K_EQUALS:
+                    if sscale > 1:
+                        if fd == 1 or fd == 5:
+                            sscale /= 2
+                        else:
+                            sscale /= 2.5
                 
             if inMenu:
                 for r in mrects:
@@ -159,7 +177,7 @@ def main():
                 changet = t
                 tick = tickslider.getSlide(event)
                 framePeriod = frameslider.getSlide(event)
-                sscale = sscaleslider.getSlide(event)
+                #sscale = sscaleslider.getSlide(event)
                 
                 for b in bboxlist:
                     if b.getClick(event): #delete body if removed
@@ -218,7 +236,7 @@ def main():
 
             tickslider.updatePos((mxcenter + 450, 120))
             frameslider.updatePos((mxcenter + 450, 300))
-            sscaleslider.updatePos((mxcenter + 450, 480))
+            #sscaleslider.updatePos((mxcenter + 450, 480))
             
             filebox.updatePos((mxcenter - 430, 480))
             loadbutton.updatePos((mxcenter - 500, 600))
@@ -231,7 +249,7 @@ def main():
 
             tickslider.disp(screen)
             frameslider.disp(screen)
-            sscaleslider.disp(screen)
+            #sscaleslider.disp(screen)
             
             filebox.disp(screen)
             loadbutton.disp(screen)
@@ -256,15 +274,21 @@ def main():
             timebox = pfont.render("t = +{}y {}d {}h {}m {}s".format(math.floor(t / 31536000), math.floor((t % 31536000) / 86400), math.floor((t % 86400) / 3600), math.floor((t % 3600) / 60), (t % 60)), True, (255,255,255))
             sbox = pfont.render("Sim Secs/Real Secs = {}".format(secsrate), True, (255,255,255))
             fbox = pfont.render("Frames Per Second = {}".format(fps), True, (255,255,255))
-            pbox = pfont.render("Center = ({}m,{}m)".format(int(-1 * xoffset * sscale), int(yoffset * sscale)), True, (255,255,255))
+            pbox = pfont.render("Center = ({}m,{}m)".format(int(-1 * xoffset), int(yoffset)), True, (255,255,255))
+            scbox = pfont.render("Scale: 1px = {}m".format(sscale), True, (255,255,255))
             screen.blit(timebox, (10, 10))
             screen.blit(sbox, (10, 30))
             screen.blit(fbox, (10, 50))
             screen.blit(pbox, (10, 70))
+            screen.blit(scbox, (10, 90))
                 
             for b in bodylist:
+                psize = int(b.size / sscale)
+                if psize < 2:
+                    psize = 2
+                
                 try:
-                    pygame.draw.circle(screen, b.color, (int(b.getPos()[0] / sscale) + mxcenter + xoffset, int(b.getPos()[1] / sscale) + int(screen.get_height()/2) + yoffset), int(b.size * 0.5))
+                    pygame.draw.circle(screen, b.color, (int((b.getPos()[0] + xoffset) / sscale) + mxcenter, int((b.getPos()[1] + yoffset) / sscale) + int(screen.get_height()/2)), psize)
                 except TypeError:
                     pass
             

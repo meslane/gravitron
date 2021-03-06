@@ -177,11 +177,13 @@ class bodyBox(clickButton):
         
         self.boxcolor = boxcolor
         
-        self.bsize = bsize
+        self.bsize = int(bsize / 600000)
         self.bcolor = bcolor
         
         if self.bsize > 50:
             self.bsize = 50
+        elif self.bsize < 5:
+            self.bsize = 5
         
         self.outerrect = pygame.Rect(self.pos, (int(self.size[0] * 2) + 20, self.size[1] + 10))
         
@@ -190,7 +192,7 @@ class bodyBox(clickButton):
     
         pygame.draw.rect(screen, self.boxcolor, self.outerrect, 2)
         pygame.draw.rect(screen, self.color, self.r, 0)
-        pygame.draw.circle(screen, self.bcolor, (self.r.center[0] - int(self.size[0]) - 5, self.pos[1]), int(self.bsize * 0.5))
+        pygame.draw.circle(screen, self.bcolor, (self.r.center[0] - int(self.size[0]) - 5, self.pos[1]), self.bsize)
     
         self.btext = self.tfont.render(self.text, True, (255, 255, 255))
         self.textrect = self.btext.get_rect(center = (self.pos[0] ,self.pos[1]))
