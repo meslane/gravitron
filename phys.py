@@ -6,6 +6,8 @@ class body:
     def __init__(self, mass, position, velocity, color, size):
         self.mass = mass
         self.position = position #position coords
+        self.screenpos = (0, 0) #position drawn on screen
+        self.inFocus = False
         
         self.forces = list() #list of force vectors on object
         self.accel = (0,0) #instantanious acceleration vector
@@ -57,6 +59,16 @@ class body:
         
     def symbol(self):
         return self.char
+        
+    def insideCircle(self, mousepos, scale):
+        psize = int(self.size / scale)
+        if psize < 2:
+            psize = 2
+        
+        if math.sqrt(((mousepos[0] - self.screenpos[0]) ** 2) + ((mousepos[1] - self.screenpos[1]) ** 2)) <= psize:
+            return True
+        else:
+            return False
         
 def distance(a, b): #distance between two bodies
     p1 = a.getPos()

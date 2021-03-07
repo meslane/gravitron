@@ -70,8 +70,7 @@ def main():
     abutton = gui.clickButton((mxcenter, 600), (200, 50), (128, 200, 128), (128, 128, 200), bfont, "Add")
     
     tickslider = gui.slider((mxcenter + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "10m", "1h"], [1, 10, 60, 600, 3600])
-    frameslider = gui.slider((mxcenter + 450, 300), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "1h", "1d"], [1, 10, 60, 3600, 86400])
-    #sscaleslider = gui.slider((mxcenter + 450, 480), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Pixel Scale (m/px)", ["1", "1000", "1e6", "1e9", "1e12"], [1, 1000, 1e6, 1e9, 1e12])
+    frameslider = gui.slider((mxcenter + 450, 300), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "10m", "1h", "1d"], [1, 10, 60, 600, 3600, 86400])
 
     filebox = gui.entrybox((mxcenter - 430, 480), (300, 50), rcolor1, rcolor2, bfont, "", bfont, "Filename", 15, fchars)
     loadbutton = gui.clickButton((mxcenter - 500, 600), (100, 50), (128, 200, 128), (128, 128, 200), bfont, "Load")
@@ -79,16 +78,6 @@ def main():
       
     bodylist = []
     backuplist = []
-    
-    '''
-    with open(str(argv), 'r') as b:
-        j = json.load(b)
-        
-    for b in j["bodies"]:
-        bdy = phys.body(b["mass"], tuple(b["position"]), tuple(b["velocity"]), tuple(b["color"]), b["size"])
-        bodylist.append(bdy)
-        backuplist.append(copy.deepcopy(bdy))
-    '''
     
     tick = 1
     framePeriod = 1
@@ -122,6 +111,14 @@ def main():
         for event in pygame.event.get(): #pygame event detection
             if event.type == pygame.QUIT:
                 loop = False
+            if event.type == pygame.MOUSEBUTTONDOWN and not inMenu:
+                mpos = pygame.mouse.get_pos()
+                for b in bodylist:
+                    if b.insideCircle(mpos, sscale) == True:
+                        b.inFocus = True
+                    else:
+                        b.inFocus = False
+                
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and not inMenu: #pause simulation
                     if paused == False:
@@ -156,6 +153,9 @@ def main():
                     xoffset = 0
                     yoffset = 0
                     
+                    for b in bodylist:
+                        b.inFocus = False
+                    
                 #zoom controls
                 fd = int(str(sscale)[0]) 
                 if event.key == pygame.K_MINUS:
@@ -177,7 +177,6 @@ def main():
                 changet = t
                 tick = tickslider.getSlide(event)
                 framePeriod = frameslider.getSlide(event)
-                #sscale = sscaleslider.getSlide(event)
                 
                 for b in bboxlist:
                     if b.getClick(event): #delete body if removed
@@ -236,7 +235,6 @@ def main():
 
             tickslider.updatePos((mxcenter + 450, 120))
             frameslider.updatePos((mxcenter + 450, 300))
-            #sscaleslider.updatePos((mxcenter + 450, 480))
             
             filebox.updatePos((mxcenter - 430, 480))
             loadbutton.updatePos((mxcenter - 500, 600))
@@ -249,7 +247,6 @@ def main():
 
             tickslider.disp(screen)
             frameslider.disp(screen)
-            #sscaleslider.disp(screen)
             
             filebox.disp(screen)
             loadbutton.disp(screen)
@@ -273,12 +270,17 @@ def main():
             screen.fill((0,0,0))
                 
             for b in bodylist:
+                if b.inFocus: #if in focus make center
+                    xoffset = -1 * b.position[0]
+                    yoffset = -1 * b.position[1]
+            
                 psize = int(b.size / sscale)
                 if psize < 2:
                     psize = 2
                 
                 try:
-                    pygame.draw.circle(screen, b.color, (int((b.getPos()[0] + xoffset) / sscale) + mxcenter, -1 * int((b.getPos()[1] + yoffset) / sscale) + int(screen.get_height()/2)), psize)
+                    b.screenpos = (int((b.getPos()[0] + xoffset) / sscale) + mxcenter, -1 * int((b.getPos()[1] + yoffset) / sscale) + int(screen.get_height()/2))
+                    pygame.draw.circle(screen, b.color, b.screenpos, psize)
                 except TypeError:
                     pass
                     
