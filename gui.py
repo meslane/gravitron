@@ -197,3 +197,45 @@ class bodyBox(clickButton):
         self.btext = self.tfont.render(self.text, True, (255, 255, 255))
         self.textrect = self.btext.get_rect(center = (self.pos[0] ,self.pos[1]))
         screen.blit(self.btext, self.textrect)
+        
+class checkBox():
+    def __init__(self, tl, boxsize, bcolor, scolor, font, optlist):
+        self.tl = tl
+        self.bcolor = bcolor
+        self.scolor = scolor
+        self.num = len(optlist)
+        self.boxsize = boxsize
+        self.optlist = optlist
+        self.rectlist = []
+        self.tlist = []
+        self.selected = 1
+        
+        offset = self.boxsize[0] + int(self.boxsize[0]/ 2)
+        for n in range(self.num):
+            self.rectlist.append(pygame.Rect((self.tl[0], self.tl[1] + (n * offset)), boxsize))
+            self.tlist.append(font.render(optlist[n], True, (255, 255, 255)))
+            
+    def updatePos(self, newpos):
+        self.tl = newpos
+        offset = self.boxsize[0] + int(self.boxsize[0]/ 2)
+        n = 0
+        for r in self.rectlist:
+            r.topleft = (self.tl[0], self.tl[1] + (n * offset))
+            n += 1
+
+    def disp(self, screen):
+        n = 0
+        for r in self.rectlist:
+            pygame.draw.rect(screen, self.bcolor, r, 4)
+            if n == self.selected:
+                pygame.draw.rect(screen, self.scolor, pygame.Rect((r.topleft[0] + 3, r.topleft[1] + 3), (self.boxsize[0] - 5, self.boxsize[1] - 5)) ,0)
+            screen.blit(self.tlist[n], (r.topleft[0] + self.boxsize[0] + 10, r.topleft[1]))
+            n += 1
+            
+    def getClick(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for r in self.rectlist:
+                if r.collidepoint(event.pos):
+                    self.selected = self.rectlist.index(r)
+                    
+        return self.optlist[self.selected]
