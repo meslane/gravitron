@@ -5,7 +5,7 @@ import math
 class body:
     def __init__(self, mass, position, velocity, color, size):
         self.mass = mass
-        self.position = position #position coords
+        self.position = position #position coords (cartesian)
         self.screenpos = (0, 0) #position drawn on screen
         self.inFocus = False
         

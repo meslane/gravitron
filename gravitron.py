@@ -71,7 +71,7 @@ def main():
     
     tickslider = gui.slider((mxcenter + 450, 120), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Tick", ["1s", "10s", "1m", "10m", "1h"], [1, 10, 60, 600, 3600])
     frameslider = gui.slider((mxcenter + 450, 300), (300, 25), (25, 50), (128, 128, 128), (200, 200, 200), bfont, "Time/Frame", ["1s", "10s", "1m", "10m", "1h", "1d"], [1, 10, 60, 600, 3600, 86400])
-    polcartbox = gui.checkBox((mxcenter + 300, 455), (50,50), (128, 128, 128), (128, 128, 200), bfont, ["Cartesian", "Polar"])
+    #polcartbox = gui.checkBox((mxcenter + 300, 455), (50,50), (128, 128, 128), (128, 128, 200), bfont, ["Cartesian", "Polar"])
     
     filebox = gui.entrybox((mxcenter - 430, 480), (300, 50), rcolor1, rcolor2, bfont, "", bfont, "Filename", 15, fchars)
     loadbutton = gui.clickButton((mxcenter - 500, 600), (100, 50), (128, 200, 128), (128, 128, 200), bfont, "Load")
@@ -179,7 +179,7 @@ def main():
                 tick = tickslider.getSlide(event)
                 framePeriod = frameslider.getSlide(event)
                 
-                print(polcartbox.getClick(event))
+                #print(polcartbox.getClick(event))
                 
                 for b in bboxlist:
                     if b.getClick(event): #delete body if removed
@@ -238,7 +238,7 @@ def main():
 
             tickslider.updatePos((mxcenter + 450, 120))
             frameslider.updatePos((mxcenter + 450, 300))
-            polcartbox.updatePos((mxcenter + 300, 455))
+            #polcartbox.updatePos((mxcenter + 300, 455))
             
             filebox.updatePos((mxcenter - 430, 480))
             loadbutton.updatePos((mxcenter - 500, 600))
@@ -251,7 +251,7 @@ def main():
 
             tickslider.disp(screen)
             frameslider.disp(screen)
-            polcartbox.disp(screen)
+            #polcartbox.disp(screen)
             
             filebox.disp(screen)
             loadbutton.disp(screen)
